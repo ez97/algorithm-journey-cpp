@@ -4,7 +4,14 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+//using namespace std;
+using std::vector;
+using std::string;
+using std::array;
+using std::to_string;
+
+// TODO: 前面两个写的不好，复习的时候重写
+
 
 // leetcode 208 : 实现前缀树 hard 
 
@@ -246,15 +253,17 @@ int Solution::findMaximumXOR(vector<int>& nums){
     return maxXor;
 }
 
-vector<string> findWords(vector<vector<char>>& board, vector<string>& words){
-    // TODO
-    int cnt = 0;
-    const int N = 3e6 + 1;
-    array<int, N> pass;
-    array<array<int, 26>, N> arr;
 
-    auto insert = [&](string &word){
-        int curr = 0;
+static const int N = 1e5 + 1;
+array<int, N> pass{};
+array<string, N> end{};
+array<array<int, 26>, N> arr{};
+int cnt;
+
+void buildTrie(vector<string> const &words){
+    cnt = 1;
+    for(auto const &word : words){
+        int curr = 1;
         pass[curr]++;
         for(auto ch : word){
             int path = ch - 'a';
@@ -264,42 +273,53 @@ vector<string> findWords(vector<vector<char>>& board, vector<string>& words){
             curr = arr[curr][path];
             pass[curr]++;
         }
-    };
+        end[curr] = word;
+    }
+}
 
-    set<string> ans;
-    int m = board.size();
-    int n = board[0].size();
-    vector<vector<int>> matrix(m, vector<int>(n, 0));
-    auto check = [&](int x, int y){
-        if(x < 0 || x >= m || y < 0 || y >= n){
-            return false;
-        }
-        return true;
-    };
-
-    std::function<void(int, int, string, int)> dfs;
-    dfs = [&](int x, int y, string word, int curr){
-        if(!check(x, y)){
-            return;
-        }
-        matrix[x][y] = 1;
-        dfs(x - 1, y, word, curr);
-
-    };
-
-    for(auto word : words){
-        insert(word);
+int dfsTrie(vector<vector<char>> &board, vector<string> &ans, int x, int y, int curr){
+    if(x < 0 || x >= board.size() || y < 0 || y >= board[0].size() || board[x][y] == 0){
+        return 0;
+    }
+    char ch = board[x][y];
+    int path = ch - 'a';
+    curr = arr[curr][path];
+    if(pass[curr] == 0){
+        return 0;
     }
 
-    for(int i = 0; i < m; i++){
-        for(int j = 0; j < n; j++){
-            dfs(i, j, "", 0);
-        }
+    int fix = 0;
+    if(!end[curr].empty()){
+        fix++;
+        ans.push_back(end[curr]);
+        end[curr].clear();
     }
 
-    vector<string> ret;
-    for(auto s : ans){
-        ret.push_back(s);
+    board[x][y] = 0;
+    fix += dfsTrie(board, ans, x+1, y, curr);
+    fix += dfsTrie(board, ans, x-1, y, curr);
+    fix += dfsTrie(board, ans, x, y+1, curr);
+    fix += dfsTrie(board, ans, x, y-1, curr);
+    board[x][y] = ch;
+    pass[curr] -= fix;
+    return fix;
+}
+
+void clearTrie(){
+    for(int i = 1; i <= cnt; i++){
+        arr[i].fill(0);
+        pass[i] = 0;
+        end[i].clear();
     }
-    return ret;
+}
+
+vector<string> Solution::findWords(vector<vector<char>>& board, vector<string>& words){
+    vector<string> ans;
+    buildTrie(words);
+    for(int i = 0; i < board.size(); i++){
+        for(int j = 0; j < board[0].size(); j++){
+            dfsTrie(board, ans, i, j, 0);
+        }
+    }
+    return ans;
 }
