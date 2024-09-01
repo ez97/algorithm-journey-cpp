@@ -12,6 +12,8 @@ class Solution {
 public:
     vector<int> dailyTemperatures(vector<int>& temperatures); // leetcode 739 : 每日温度 medium
     int sumSubarrayMins(vector<int>& arr); // leetcode 907 : 子数组的最小值之和 medium
+    int largestRectangleArea(vector<int>& heights); // leetcode 84 : 柱状图中最大的矩形 hard
+    int maximalRectangle(vector<vector<char>>& matrix); // leetcode 85 : 最大矩形 hard
 };
 
 int main(){
@@ -124,4 +126,88 @@ int Solution::sumSubarrayMins(vector<int>& arr){
         }
         //cout << endl;
         return ans;
+}
+
+int Solution::largestRectangleArea(vector<int>& heights){
+    int n = heights.size();
+    vector<int> left(n), right(n, n);
+    stack<int> stk;
+    for (int i = 0; i < n; i++) {
+        while (!stk.empty() && heights[stk.top()] >= heights[i]) { 
+            right[stk.top()] = i;
+            // 有可能相等，但是不需要更新，不影响结果
+            stk.pop();
+        }
+        left[i] = stk.empty() ? -1 : stk.top();
+        stk.push(i);
+    }
+    int ans = 0;
+    for (int i = 0; i < n; i++) {
+        ans = std::max(ans, heights[i] * (right[i] - left[i] - 1));
+    }
+    return ans;
+}
+
+int getMax(vector<int> const &height){
+    int n = height.size();
+    vector<int> left(n, 0);
+    vector<int> right(n, 0);
+    stack<int> stk;
+    for(int i = 0; i < n; i++){
+        while(!stk.empty() && height[stk.top()] >= height[i]){
+            stk.pop();
+        }
+        left[i] = stk.empty() ? -1 : stk.top();
+        stk.push(i);
+    }
+    stk = stack<int>(); // 快速清空
+    for(int i = n - 1; i >= 0; i--){
+        while(!stk.empty() && height[stk.top()] >= height[i]){
+            stk.pop();
+        }
+        right[i] = stk.empty() ? n : stk.top();
+        stk.push(i);
+    }
+    int maxArea = 0;
+    for(int i = 0; i < n; i++){
+        maxArea = std::max(maxArea, height[i] * (right[i] - left[i] - 1));
+    }
+    return maxArea;
+}
+
+int Solution::maximalRectangle(vector<vector<char>>& matrix){
+    int m = matrix.size();
+    int n = matrix[0].size();
+    int ans = 0;
+    vector<int> prefix(n, 0);
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            prefix[j] = matrix[i][j] == '1' ? (prefix[j] + 1) : 0;
+        }
+        ans = std::max(ans, getMax(prefix));
+    }
+    return ans;
+}
+
+// 洛谷P5788 单调栈
+int MonotonicStackLuogu(){
+    stack<int> stk;
+    int n;
+    int nums[3000001];
+    int ans[3000001];
+    scanf("%d", &n);
+    for(int i = 1; i <= n; i++){
+        scanf("%d", &nums[i]);
+    }
+    for(int i = n; i >= 1; i--){
+        while(!stk.empty() && nums[stk.top()] <= nums[i]){
+            stk.pop();
+        }
+        ans[i] = stk.empty() ? 0 : stk.top();
+        stk.push(i);
+    }
+    for(int i = 1; i <= n; i++){
+        printf("%d ", ans[i]);
+    }
+    return 0;
 }
